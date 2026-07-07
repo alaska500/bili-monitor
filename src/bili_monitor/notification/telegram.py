@@ -79,8 +79,8 @@ class TelegramNotifier(NotificationBase):
             text = text.replace(char, f"\\{char}")
         return text
 
-    def test(self) -> bool:
+    def test(self) -> NotificationResult:
         """测试通知器"""
         url = self.API_URL.format(token=self._bot_token, method="sendMessage")
         data = {"chat_id": self._chat_id, "text": "B站动态监控测试消息"}
-        return self._test_request("POST", url, "ok", True, payload=data)
+        return self._test_request_result("POST", url, "ok", True, "Telegram", payload=data)

@@ -148,7 +148,7 @@ class EmailNotifier(NotificationBase):
         </html>
         """
     
-    def test(self) -> bool:
+    def test(self) -> NotificationResult:
         """测试通知器"""
         try:
             message = MIMEText("B站动态监控测试消息", "plain", "utf-8")
@@ -165,7 +165,7 @@ class EmailNotifier(NotificationBase):
                     server.starttls()
                     server.login(self._smtp_user, self._smtp_password)
                     server.sendmail(self._sender, self._receivers[:1], message.as_string())
-            return True
+            return NotificationResult(success=True, message="邮件测试成功")
         except Exception as e:
             self._logger.error(f"测试失败: {e}")
-            return False
+            return NotificationResult(success=False, message=f"邮件测试失败: {e}")

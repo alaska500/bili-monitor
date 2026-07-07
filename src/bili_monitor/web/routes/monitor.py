@@ -11,6 +11,8 @@ from typing import Any
 from flask import Blueprint, current_app, jsonify, request
 
 from ...config.loader import load_config
+from ...config.models import NotificationConfig
+from ...notification import create_notifier
 from ...monitor.runner import Monitor
 
 logger = logging.getLogger("bili-monitor.web")
@@ -68,6 +70,45 @@ def stop_monitor() -> Any:
     except Exception as e:
         logger.error(f"停止监控失败: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@monitor_bp.route("/api/notification/test", methods=["POST"])
+def test_notification() -> Any:
+    """测试通知渠道"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "请求体不能为空"}), 400
+
+        notif_type = data.get("type", "")
+        if not notif_type:
+            return jsonify({"success": False, "message": "缺少通知类型"}), 400
+
+        # 过滤空值参数
+        kwargs = {k: v for k, v in data.items() if v not in ("", None) and k != "type"}
+
+        config_path = current_app.config["CONFIG_PATH"]
+        try:
+            config = load_config(config_path)
+        except Exception:
+            config = None
+
+        notifier = create_notifier(
+            notifier_type=notif_type,
+            logger=logger,
+            **kwargs,
+        )
+
+        result = notifier.test()
+        return jsonify({"success": result.success, "message": result.message})
+
+    except ValueError as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+    except Exception as e:
+        logger.error(f"测试通知失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "message": f"测试异常: {e}"}), 500
 
 
 @monitor_bp.route("/api/stats")

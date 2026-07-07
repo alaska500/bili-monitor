@@ -28,7 +28,7 @@ class PushPlusNotifier(NotificationBase):
         }
         return self._request("POST", "http://www.pushplus.plus/send", "code", 200, "PushPlus", "PushPlus", json_data=data)
 
-    def test(self) -> bool:
+    def test(self) -> NotificationResult:
         """测试通知器"""
         data = {"token": self._token, "title": "测试", "content": "B站动态监控测试消息"}
-        return self._test_request("POST", "http://www.pushplus.plus/send", "code", 200, payload=data)
+        return self._test_request_result("POST", "http://www.pushplus.plus/send", "code", 200, "PushPlus", payload=data)

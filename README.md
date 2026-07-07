@@ -36,6 +36,31 @@ bili-monitor monitor
 bili-monitor web
 ```
 
+Web 管理面板默认监听 `http://127.0.0.1:5000/`，也可以指定端口：
+
+```bash
+bili-monitor web --port 8000
+```
+
+在 Web 面板点击启动监控后，可以通过 `/api/status` 查看运行状态。
+
+## 常见问题
+
+### Cookie 显示过期但日志里有 WinError 10013
+
+如果日志出现类似下面的错误：
+
+```text
+Cookie 已过期: HTTPSConnectionPool(host='api.bilibili.com', port=443)...
+Failed to establish a new connection: [WinError 10013]
+```
+
+这通常不是 Cookie 被 B 站判定失效，而是当前 Python 进程没有权限访问外网套接字，导致访问 `api.bilibili.com` 失败后被程序记录为 Cookie 过期。处理方式：
+
+1. 确认防火墙、安全软件或运行环境允许 Python 访问外网。
+2. 在 Codex/受限沙箱中运行时，使用允许网络访问的方式启动 Web 服务。
+3. 重新启动服务后，再从 Web 面板启动监控并观察日志；如果能看到 `Cookie 有效`、UP 主信息或动态列表日志，说明网络权限已恢复。
+
 ## Docker部署
 
 ```bash

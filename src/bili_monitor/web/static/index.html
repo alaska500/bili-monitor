@@ -1489,6 +1489,7 @@
                                         <el-dropdown-menu>
                                             <el-dropdown-item command="wechat">企业微信</el-dropdown-item>
                                             <el-dropdown-item command="dingtalk">钉钉</el-dropdown-item>
+                                            <el-dropdown-item command="feishu">飞书</el-dropdown-item>
                                             <el-dropdown-item command="telegram">Telegram</el-dropdown-item>
                                             <el-dropdown-item command="email">邮件</el-dropdown-item>
                                         </el-dropdown-menu>
@@ -1499,6 +1500,9 @@
                             <div v-for="(notification, index) in config.notification" :key="index" class="notification-item">
                                 <div class="notification-header">
                                     <el-tag>{{ getNotificationLabel(notification.type) }}</el-tag>
+                                    <el-button type="primary" size="small" text @click="testNotification(index)" :loading="testingIndex === index">
+                                        测试发送
+                                    </el-button>
                                     <el-button type="danger" size="small" text @click="removeNotification(index)">
                                         删除
                                     </el-button>
@@ -1519,6 +1523,17 @@
                                         </el-form-item>
                                         <el-form-item label="加签密钥">
                                             <el-input v-model="notification.secret" placeholder="可选" />
+                                        </el-form-item>
+                                    </el-form>
+                                </template>
+                                
+                                <template v-else-if="notification.type === 'feishu'">
+                                    <el-form label-width="100px">
+                                        <el-form-item label="Webhook URL">
+                                            <el-input v-model="notification.webhook_url" placeholder="飞书机器人Webhook地址" />
+                                        </el-form-item>
+                                        <el-form-item label="加签密钥">
+                                            <el-input v-model="notification.secret" placeholder="可选，启用加签时填写" />
                                         </el-form-item>
                                     </el-form>
                                 </template>
@@ -1847,6 +1862,7 @@
                 const saving = ref(false);
                 const starting = ref(false);
                 const stopping = ref(false);
+                const testingIndex = ref(-1);
                 const loadingDynamics = ref(false);
                 const loadingLogs = ref(false);
                 const logs = ref([]);
@@ -2168,6 +2184,9 @@
                     } else if (type === 'dingtalk') {
                         notification.webhook_url = '';
                         notification.secret = '';
+                    } else if (type === 'feishu') {
+                        notification.webhook_url = '';
+                        notification.secret = '';
                     } else if (type === 'telegram') {
                         notification.bot_token = '';
                         notification.chat_id = '';
@@ -2185,11 +2204,29 @@
                 const removeNotification = (index) => {
                     config.notification.splice(index, 1);
                 };
+
+                const testNotification = async (index) => {
+                    testingIndex.value = index;
+                    try {
+                        const notification = { ...config.notification[index] };
+                        const data = await api.post('/api/notification/test', notification);
+                        if (data.success) {
+                            ElementPlus.ElMessage.success(data.message || '测试消息发送成功');
+                        } else {
+                            ElementPlus.ElMessage.error(data.message || '测试失败');
+                        }
+                    } catch (e) {
+                        ElementPlus.ElMessage.error('测试异常: ' + e.message);
+                    } finally {
+                        testingIndex.value = -1;
+                    }
+                };
                 
                 const getNotificationLabel = (type) => {
                     const labels = {
                         wechat: '企业微信',
                         dingtalk: '钉钉',
+                        feishu: '飞书',
                         telegram: 'Telegram',
                         email: '邮件'
                     };
@@ -2421,9 +2458,7 @@
                                 clearInterval(qrCheckTimer);
                                 ElementPlus.ElMessage.success('登录成功！Cookie已自动保存');
                                 
-                                if (data.masked_cookie) {
-                                    config.monitor.cookie = data.masked_cookie;
-                                }
+                                // 注：后端 /api/login/check 直接持久化完整 Cookie，前端无需再次保存。
                                 
                                 setTimeout(() => {
                                     showQrLogin.value = false;
@@ -2561,7 +2596,9 @@
                     openDynamic,
                     showDynamicDetail,
                     parseImages,
-                    previewImage,
+                    previewImage,
+                    testingIndex,
+                    testNotification,
                     copyDynamicId,
                     dynamicDetailVisible,
                     dynamicDetail,

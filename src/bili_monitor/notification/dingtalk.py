@@ -47,7 +47,7 @@ class DingTalkNotifier(NotificationBase):
         data = {"msgtype": "text", "text": {"content": content}}
         return self._request("POST", self._sign_url(), "errcode", 0, "钉钉", "钉钉", json_data=data)
 
-    def test(self) -> bool:
+    def test(self) -> NotificationResult:
         """测试通知器"""
         data = {"msgtype": "text", "text": {"content": "B站动态监控测试消息"}}
-        return self._test_request("POST", self._sign_url(), "errcode", 0, payload=data)
+        return self._test_request_result("POST", self._sign_url(), "errcode", 0, "钉钉", payload=data)

@@ -36,10 +36,9 @@ class NotificationBase(ABC):
         """发送通知"""
         ...
 
-    @abstractmethod
-    def test(self) -> bool:
+    def test(self) -> NotificationResult:
         """测试通知器是否正常工作"""
-        ...
+        return NotificationResult(success=False, message="子类必须实现 test() 方法")
 
     def _request(
         self,
@@ -80,7 +79,7 @@ class NotificationBase(ABC):
         payload: dict | None = None,
         timeout: int = 10,
     ) -> bool:
-        """统一测试请求辅助方法"""
+        """统一测试请求辅助方法（返回 bool，向后兼容）"""
         try:
             if payload:
                 response = requests.post(url, json=payload, timeout=timeout)
@@ -92,6 +91,35 @@ class NotificationBase(ABC):
         except Exception as e:
             self._logger.error(f"测试失败: {e}")
             return False
+
+    def _test_request_result(
+        self,
+        method: str,
+        url: str,
+        success_key: str,
+        success_value: Any,
+        notify_prefix: str,
+        payload: dict | None = None,
+        form_data: dict | None = None,
+        timeout: int = 10,
+    ) -> NotificationResult:
+        """统一的测试请求辅助方法，返回完整 NotificationResult"""
+        try:
+            if payload:
+                response = requests.post(url, json=payload, timeout=timeout)
+            elif form_data:
+                response = requests.post(url, data=form_data, timeout=timeout)
+            elif method.upper() == "GET":
+                response = requests.get(url, timeout=timeout)
+            else:
+                response = requests.post(url, timeout=timeout)
+            result = response.json()
+            if result.get(success_key) == success_value:
+                return NotificationResult(success=True, message=f"{notify_prefix}测试成功")
+            msg = result.get("message") or result.get("errmsg") or result.get("msg") or str(result)
+            return NotificationResult(success=False, message=f"{notify_prefix}测试失败: {msg}")
+        except Exception as e:
+            return NotificationResult(success=False, message=f"{notify_prefix}测试异常: {e}")
 
     def format_message(self, dynamic: DynamicInfo) -> str:
         """格式化动态信息为通知消息"""

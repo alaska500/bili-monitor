@@ -42,7 +42,7 @@ class WeChatNotifier(NotificationBase):
         data = {"msgtype": "text", "text": {"content": "\n".join(content_lines)}}
         return self._request("POST", self._webhook_url, "errcode", 0, "企业微信", "企业微信", json_data=data)
 
-    def test(self) -> bool:
+    def test(self) -> NotificationResult:
         """测试通知器"""
         data = {"msgtype": "text", "text": {"content": "B站动态监控测试消息"}}
-        return self._test_request("POST", self._webhook_url, "errcode", 0, payload=data)
+        return self._test_request_result("POST", self._webhook_url, "errcode", 0, "企业微信", payload=data)
